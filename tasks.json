@@ -1,0 +1,23 @@
+[
+  {
+    "title": "Buy groceries",
+    "body": "Milk, Bread, Eggs",
+    "status": 1,
+    "deleted": false
+  },
+  {
+    "title": "Morning Routine",
+    "body": [
+      {
+        "description": "Brush teeth",
+        "checked": true
+      },
+      {
+        "description": "Have breakfast",
+        "checked": false
+      }
+    ],
+    "status": 0,
+    "deleted": false
+  }
+]
