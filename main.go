@@ -2,8 +2,9 @@ package main
 
 import (
 	"fmt"
+	"sync"
+	"time"
 	"todo/model"
-	"todo/utils"
 )
 
 func printTasks(tasks ...model.Task) {
@@ -18,37 +19,64 @@ func printTasks(tasks ...model.Task) {
 	}
 }
 
+func updateValueOdd(data *int, wg *sync.WaitGroup) {
+	defer wg.Done()
+	for i := 1; i <= 100; i += 2 {
+		*data = i
+		fmt.Println("Odd data: ", *data)
+	}
+}
+
+func updateValueEven(data *int, wg *sync.WaitGroup) {
+	defer wg.Done()
+	for i := 2; i <= 100; i += 2 {
+		*data = i
+		fmt.Println("Even data: ", *data)
+	}
+}
+
 func main() {
-	task1 := model.Task{
-		Title:   "Buy groceries",
-		Body:    model.Note("Milk, Bread, Eggs"),
-		Status:  model.Completed,
-		Deleted: false,
-	}
+	// task1 := model.Task{
+	// 	Title:   "Buy groceries",
+	// 	Body:    model.Note("Milk, Bread, Eggs"),
+	// 	Status:  model.Completed,
+	// 	Deleted: false,
+	// }
 
-	task2 := model.Task{
-		Title: "Morning Routine",
-		Body: model.TickBoxList{
-			{Description: "Brush teeth", Checked: true},
-			{Description: "Have breakfast", Checked: false},
-		},
-		Status:  model.Active,
-		Deleted: false,
-	}
+	// task2 := model.Task{
+	// 	Title: "Morning Routine",
+	// 	Body: model.TickBoxList{
+	// 		{Description: "Brush teeth", Checked: true},
+	// 		{Description: "Have breakfast", Checked: false},
+	// 	},
+	// 	Status:  model.Active,
+	// 	Deleted: false,
+	// }
 
-	printTasks(task1, task2)
+	// printTasks(task1, task2)
 
-	err := utils.WriteTasksToJSONFile("tasks.json", []model.Task{task1, task2})
-	if err != nil {
-		fmt.Println("Error writing tasks to JSON file:", err)
-	}
+	// err := utils.WriteTasksToJSONFile("tasks.json", []model.Task{task1, task2})
+	// if err != nil {
+	// 	fmt.Println("Error writing tasks to JSON file:", err)
+	// }
 
-	tasks, err := utils.ReadTasksFromJSONFile("tasks.json")
-	if err != nil {
-		fmt.Println("Error reading tasks from JSON file:", err)
-		return
-	}
+	// tasks, err := utils.ReadTasksFromJSONFile("tasks.json")
+	// if err != nil {
+	// 	fmt.Println("Error reading tasks from JSON file:", err)
+	// 	return
+	// }
 
-	printTasks(tasks...)
+	// printTasks(tasks...)
 
+	var data int
+	var wg sync.WaitGroup
+
+	wg.Add(2)
+	start := time.Now()
+	go updateValueOdd(&data, &wg)
+	go updateValueEven(&data, &wg)
+
+	wg.Wait()
+	elapsed := time.Since(start)
+	fmt.Println("time routines: ", elapsed)
 }
