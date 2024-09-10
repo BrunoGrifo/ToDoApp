@@ -1,6 +1,7 @@
 package task
 
 import (
+	"html/template"
 	"log"
 	"net/http"
 	"todo/types"
@@ -20,6 +21,8 @@ func NewHandler(repository types.TaskRepository) *Handler {
 func (h *Handler) RegisterRoutes(router *http.ServeMux) {
 	router.HandleFunc("GET /task", h.handleGetTasks)
 	router.HandleFunc("POST /task", h.handleCreateTasks)
+	router.HandleFunc("PUT /task", h.handleUpdateTasks)
+	router.HandleFunc("DELETE /task", h.handleDeleteTasks)
 }
 
 func (h *Handler) handleGetTasks(w http.ResponseWriter, r *http.Request) {
@@ -27,7 +30,35 @@ func (h *Handler) handleGetTasks(w http.ResponseWriter, r *http.Request) {
 
 	if id == "" {
 		// get all
-		log.Println("hello")
+		log.Println("Getting all tasks...")
+		tasks, err := h.repository.GetAllTasks()
+		if err != nil {
+			http.Error(w, "Internel server error", http.StatusInternalServerError)
+			return
+		}
+
+		var allTasks types.TodoList = types.TodoList{
+			Tasks: tasks,
+		}
+		// Create a template using the html
+		tmpl, err := template.ParseFiles("view.html")
+		if err != nil {
+			log.Fatal(err)
+		}
+		tmpl.Execute(w, allTasks)
+
+		// // Convert the tasks list to JSON
+		// w.Header().Set("Content-Type", "application/json")
+		// err = json.NewEncoder(w).Encode(tasks)
+		// if err != nil {
+		// 	http.Error(w, "Failed to encode tasks to JSON", http.StatusInternalServerError)
+		// 	return
+		// }
+
+		// // Successfully return the tasks
+		// w.WriteHeader(http.StatusOK)
+		// return
+
 	} else {
 		// get by id
 		// Validate UUID
@@ -62,4 +93,12 @@ func (h *Handler) handleCreateTasks(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+}
+
+func (h *Handler) handleUpdateTasks(w http.ResponseWriter, r *http.Request) {
+
+}
+
+func (h *Handler) handleDeleteTasks(w http.ResponseWriter, r *http.Request) {
+
 }

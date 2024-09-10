@@ -20,9 +20,14 @@ func NewApiServer(addr string, db *sql.DB) APIServer {
 }
 
 func (s *APIServer) Run() error {
+	// API handlers
 	var mux *http.ServeMux = http.NewServeMux()
 	var taskRepository *task.Repository = task.NewRepository(s.db)
 	task.NewHandler(taskRepository).RegisterRoutes(mux)
+
+	// File server
+	fileserver := http.FileServer(http.Dir("./static"))
+	mux.Handle("GET /static/", http.StripPrefix("/static", fileserver))
 
 	log.Println("Listening on", s.addr)
 	return http.ListenAndServe(s.addr, mux)

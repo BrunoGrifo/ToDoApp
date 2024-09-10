@@ -18,7 +18,12 @@ const (
 
 type TaskRepository interface {
 	GetTaskById(id uuid.UUID) (*Task, error)
+	GetAllTasks() ([]*Task, error)
 	CreateTask(task Task) error
+}
+
+type TodoList struct {
+	Tasks []*Task
 }
 
 type Task struct {

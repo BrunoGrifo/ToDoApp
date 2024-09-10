@@ -18,31 +18,54 @@ func NewRepository(db *sql.DB) *Repository {
 }
 
 func (r *Repository) GetTaskById(id uuid.UUID) (*types.Task, error) {
-	log.Println("checkpoint")
 	rows, err := r.db.Query("SELECT * from tasks WHERE id = ?", id)
-	log.Println("checkpoint 1")
 	if err != nil {
-		log.Println("upsi")
 		return nil, err
 	}
-	log.Println("checkpoint 2")
+	defer rows.Close()
+
 	var task *types.Task = new(types.Task)
-	log.Println("hmmm")
 	for rows.Next() {
-		log.Println("loop")
 		task, err = scanRowsIntoTask(rows)
 		if err != nil {
-			log.Println("buuuuu")
 			return nil, err
 		}
 	}
 
 	if task.ID == uuid.Nil {
-		log.Println("hello there")
 		return nil, fmt.Errorf("user not found")
 	}
 
 	return task, nil
+}
+
+func (r *Repository) GetAllTasks() ([]*types.Task, error) {
+	rows, err := r.db.Query("SELECT * FROM tasks WHERE deleted = ? ORDER BY status", false)
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+	defer rows.Close()
+
+	var tasks []*types.Task
+	for rows.Next() {
+		task, err := scanRowsIntoTask(rows)
+		if err != nil {
+			return nil, err
+		}
+
+		tasks = append(tasks, task)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+
+	if len(tasks) == 0 {
+		log.Println("No tasks found")
+	}
+
+	return tasks, nil
 }
 
 func scanRowsIntoTask(rows *sql.Rows) (*types.Task, error) {
@@ -60,10 +83,6 @@ func scanRowsIntoTask(rows *sql.Rows) (*types.Task, error) {
 	}
 
 	return task, nil
-}
-
-func (r *Repository) GetAllTasks() (*types.Task, error) {
-	return nil, nil
 }
 
 func (r *Repository) CreateTask(task types.Task) error {
