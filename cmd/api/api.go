@@ -5,6 +5,8 @@ import (
 	"log"
 	"net/http"
 	"todo/service/task"
+
+	"github.com/gorilla/csrf"
 )
 
 type APIServer struct {
@@ -30,5 +32,11 @@ func (s *APIServer) Run() error {
 	mux.Handle("GET /static/", http.StripPrefix("/static", fileserver))
 
 	log.Println("Listening on", s.addr)
-	return http.ListenAndServe(s.addr, mux)
+	csrfMiddleware := csrf.Protect(
+		[]byte("32-byte-long-auth-key"),
+		csrf.Path("/task"),
+		csrf.Secure(false), // Disable this for local development without HTTPS
+	)
+	return http.ListenAndServe(s.addr, csrfMiddleware(mux))
+	// return http.ListenAndServe(s.addr, mux)
 }

@@ -20,10 +20,7 @@ type TaskRepository interface {
 	GetTaskById(id uuid.UUID) (*Task, error)
 	GetAllTasks() ([]*Task, error)
 	CreateTask(task Task) error
-}
-
-type TodoList struct {
-	Tasks []*Task
+	DeleteTask(id uuid.UUID) error
 }
 
 type Task struct {
@@ -32,12 +29,6 @@ type Task struct {
 	Description string    `json:"description"`
 	Status      Status    `json:"status"`
 	Deleted     bool      `json:"deleted"`
-}
-
-type TaskDto struct {
-	Title       string `json:"title"`
-	Description string `json:"description"`
-	Status      Status `json:"status"`
 }
 
 func (t Task) Print() {

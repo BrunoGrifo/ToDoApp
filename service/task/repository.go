@@ -93,3 +93,8 @@ func (r *Repository) CreateTask(task types.Task) error {
 	}
 	return nil
 }
+
+func (r *Repository) DeleteTask(id uuid.UUID) error {
+	_, err := r.db.Exec("DELETE FROM tasks WHERE id = ?", id)
+	return err
+}
