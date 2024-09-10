@@ -21,7 +21,8 @@ func NewApiServer(addr string, db *sql.DB) APIServer {
 
 func (s *APIServer) Run() error {
 	var mux *http.ServeMux = http.NewServeMux()
-	task.NewHandler().RegisterRoutes(mux)
+	var taskRepository *task.Repository = task.NewRepository(s.db)
+	task.NewHandler(taskRepository).RegisterRoutes(mux)
 
 	log.Println("Listening on", s.addr)
 	return http.ListenAndServe(s.addr, mux)

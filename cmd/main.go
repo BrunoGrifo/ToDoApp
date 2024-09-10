@@ -1,15 +1,46 @@
 package main
 
 import (
+	"database/sql"
 	"log"
 	"todo/cmd/api"
+	"todo/config"
+	"todo/db"
+
+	"github.com/go-sql-driver/mysql"
 )
 
 func main() {
-	var server api.APIServer = api.NewApiServer(":8080", nil)
+	var cfg mysql.Config = mysql.Config{
+		User:                 config.Envs.DBUser,
+		Passwd:               config.Envs.DBPassword,
+		Net:                  "tcp",
+		Addr:                 config.Envs.DBAddress,
+		DBName:               config.Envs.DBName,
+		AllowNativePasswords: true,
+		ParseTime:            true,
+	}
+
+	db, err := db.NewMySqlStorage(cfg)
+	if err != nil {
+		log.Fatal(err)
+	}
+	initStorage(db)
+	defer db.Close()
+
+	var server api.APIServer = api.NewApiServer(":8080", db)
 	if err := server.Run(); err != nil {
 		log.Fatal(err)
 	}
+}
+
+func initStorage(db *sql.DB) {
+	log.Println("DB: Connecting...")
+	err := db.Ping()
+	if err != nil {
+		log.Fatal(err)
+	}
+	log.Println("DB: Successfully connected to todoapp database!")
 }
 
 // type DataContainer struct {
