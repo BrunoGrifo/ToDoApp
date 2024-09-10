@@ -18,6 +18,7 @@ const (
 
 type TaskRepository interface {
 	GetTaskById(id uuid.UUID) (*Task, error)
+	CreateTask(task Task) error
 }
 
 type Task struct {

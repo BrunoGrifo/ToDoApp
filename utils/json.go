@@ -4,11 +4,27 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"net/http"
 	"os"
-	"todo/model"
+	"todo/types"
 )
 
-func WriteTasksToJSONFile(filename string, tasks []model.Task) error {
+func ParseJson(request *http.Request, obj any) error {
+	if request.Body == nil {
+		return fmt.Errorf("missing request body")
+	}
+
+	// Decode the incoming JSON into the TaskDto struct
+	var err error = json.NewDecoder(request.Body).Decode(&obj)
+	if err != nil {
+		// Handle error if JSON is invalid or doesn't match the TaskDto struct
+		return fmt.Errorf("invalid request payload. error decoding request body %s", err)
+	}
+
+	return err
+}
+
+func WriteTasksToJSONFile(filename string, tasks []types.Task) error {
 	file, err := os.Create(filename)
 	if err != nil {
 		return err
@@ -29,7 +45,7 @@ func WriteTasksToJSONFile(filename string, tasks []model.Task) error {
 	return nil
 }
 
-func ReadTasksFromJSONFile(filename string) ([]model.Task, error) {
+func ReadTasksFromJSONFile(filename string) ([]types.Task, error) {
 	file, err := os.Open(filename)
 	if err != nil {
 		return nil, err
@@ -41,7 +57,7 @@ func ReadTasksFromJSONFile(filename string) ([]model.Task, error) {
 		return nil, err
 	}
 
-	var tasks []model.Task
+	var tasks []types.Task
 	if err := json.Unmarshal(data, &tasks); err != nil {
 		return nil, err
 	}

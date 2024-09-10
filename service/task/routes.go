@@ -4,6 +4,7 @@ import (
 	"log"
 	"net/http"
 	"todo/types"
+	"todo/utils"
 
 	"github.com/google/uuid"
 )
@@ -41,5 +42,24 @@ func (h *Handler) handleGetTasks(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) handleCreateTasks(w http.ResponseWriter, r *http.Request) {
-	// id := r.URL.Query().Get("id")
+	var taskDto types.TaskDto
+	var err error = utils.ParseJson(r, &taskDto)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+	}
+	// validator
+
+	var task types.Task = types.Task{
+		ID:          uuid.New(),
+		Title:       taskDto.Title,
+		Description: taskDto.Description,
+		Status:      taskDto.Status,
+		Deleted:     false,
+	}
+	err = h.repository.CreateTask(task)
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 }

@@ -66,9 +66,9 @@ func (r *Repository) GetAllTasks() (*types.Task, error) {
 	return nil, nil
 }
 
-func (r *Repository) CreateTask(task types.TaskDto) error {
+func (r *Repository) CreateTask(task types.Task) error {
 	_, err := r.db.Exec("INSERT INTO tasks (id, title, description, status, deleted) VALUES (?,?,?,?,?)",
-		uuid.New(), task.Title, task.Description, types.Active, false)
+		task.ID, task.Title, task.Description, types.Active, false)
 	if err != nil {
 		return err
 	}
