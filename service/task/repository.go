@@ -98,3 +98,12 @@ func (r *Repository) DeleteTask(id uuid.UUID) error {
 	_, err := r.db.Exec("DELETE FROM tasks WHERE id = ?", id)
 	return err
 }
+
+func (r *Repository) UpdateTask(task *types.Task) error {
+	_, err := r.db.Exec("UPDATE tasks SET title = ?, description = ?, status = ? WHERE id = ?",
+		task.Title, task.Description, task.Status, task.ID)
+	if err != nil {
+		return fmt.Errorf("failed to update task with ID %d: %w", task.ID, err)
+	}
+	return nil
+}

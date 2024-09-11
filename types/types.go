@@ -21,6 +21,7 @@ type TaskRepository interface {
 	GetAllTasks() ([]*Task, error)
 	CreateTask(task Task) error
 	DeleteTask(id uuid.UUID) error
+	UpdateTask(task *Task) error
 }
 
 type Task struct {

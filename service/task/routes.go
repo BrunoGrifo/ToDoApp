@@ -4,6 +4,7 @@ import (
 	"html/template"
 	"log"
 	"net/http"
+	"strconv"
 	"todo/dto"
 	"todo/mappers"
 	"todo/types"
@@ -24,7 +25,7 @@ func (h *Handler) RegisterRoutes(router *http.ServeMux) {
 	router.HandleFunc("GET /task", h.handleGetAllTasks)
 	router.HandleFunc("GET /task/{id}", h.handleGetTasks)
 	router.HandleFunc("POST /task", h.handleCreateTasks)
-	router.HandleFunc("PUT /task", h.handleUpdateTasks)
+	router.HandleFunc("PUT /task/{id}", h.handleUpdateTasks)
 	router.HandleFunc("DELETE /task/{id}", h.handleDeleteTasks)
 	router.HandleFunc("GET /show_csrf_form", h.handleCsrfForm)
 
@@ -114,15 +115,43 @@ func (h *Handler) handleCreateTasks(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) handleUpdateTasks(w http.ResponseWriter, r *http.Request) {
-	log.Println("yeeeahhhhhh boyyyy")
+	var id string = r.PathValue("id")
+	var err error = r.ParseForm()
+	if err != nil {
+		http.Error(w, "Invalid form data", http.StatusBadRequest)
+		return
+	}
 
+	taskID, err := uuid.Parse(id)
+	if err != nil {
+		http.Error(w, "Invalid task ID", http.StatusBadRequest)
+		return
+	}
+
+	var name string = r.FormValue("title")
+	var description string = r.FormValue("description")
+	status, _ := strconv.Atoi(r.FormValue("status"))
+
+	// // validator
+
+	var task types.Task = types.Task{
+		ID:          taskID,
+		Title:       name,
+		Description: description,
+		Status:      types.Status(status),
+		Deleted:     false,
+	}
+
+	err = h.repository.UpdateTask(&task)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 }
 
 func (h *Handler) handleDeleteTasks(w http.ResponseWriter, r *http.Request) {
 	log.Println("Deleting task...")
-	id := r.PathValue("id")
-	log.Println(id)
-	// id := r.URL.Query().Get("id")
+	var id string = r.PathValue("id")
 
 	if id == "" {
 		http.Error(w, "Missing task ID", http.StatusBadRequest)
@@ -149,9 +178,9 @@ func (h *Handler) handleCsrfForm(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	csrfField := csrf.TemplateField(r)
+
 	tmpl.Execute(w, map[string]interface{}{
-		csrf.TemplateTag: csrfField,
+		csrf.TemplateTag: csrf.Token(r),
 	})
 
 }

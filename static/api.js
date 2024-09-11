@@ -1,9 +1,9 @@
 document.querySelectorAll('.delete-button').forEach(button => {
-    button.addEventListener('click', function() {
+    button.addEventListener('click', function(event) {
+        event.stopPropagation();
         const taskId = this.getAttribute('data-task-id');
         const csrfToken = this.getAttribute('data-csrf-token');
         console.log(csrfToken)
-        console.log("yo")
         if (confirm('Are you sure you want to delete this task?')) {
             fetch(`/task/${taskId}`, {
                 method: 'DELETE',
@@ -49,11 +49,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
 document.getElementById('update-button').addEventListener('click', function() {
     const form = document.getElementById('update-task-form');
+    const taskId = window.location.pathname.split("/")[2];
     const formData = new FormData(form);
     console.log("check");
     const csrfToken = document.getElementById('csrf-token').value;
 
-    fetch('/task', {
+    fetch(`/task/${taskId}`, {
         method: 'PUT',
         headers: {
             'Content-Type': 'application/x-www-form-urlencoded',
@@ -62,11 +63,13 @@ document.getElementById('update-button').addEventListener('click', function() {
         body: new URLSearchParams(formData).toString()
     })
     .then(response => {
-        console.log("check");
+
         if (!response.ok) {
             throw new Error('Network response was not ok');
         }
-        return response.json();
+        const url = '/task';
+        // Redirect to the URL
+        window.location.href = url;
     })
     .then(data => {
         // Handle successful response
