@@ -16,7 +16,7 @@
     
         <div class="gallery">
             {{ range .Tasks }}
-                <div class="gallery-item {{ if eq .Status 0 }}status-active{{ else if eq .Status 1 }}status-completed{{ else }}status-unknown{{ end }}">
+                <div class="gallery-item {{ if eq .Status 0 }}status-active{{ else if eq .Status 1 }}status-completed{{ else }}status-unknown{{ end }}" data-task-id="{{ .ID }}">
                     <h2 class="todo-title">{{ .Title }}</h2>
                     <p class="todo-description">{{ .Description }}</p>
                     <p class="todo-status">{{ if eq .Status 0 }}Active{{ else if eq .Status 1 }}Completed{{ else }}Unknown{{ end }}</p>

@@ -21,3 +21,5 @@ migrate_down:
 
 migrate_force:
 	migrate -path cmd/migrate/migrations -database "mysql://root:<pass>@tcp(localhost:3306)/todoapp?checkConnLiveness=false&parseTime=true&maxAllowedPacket=0" force 1
+docker:
+	docker run --name todo_mysql -e MYSQL_ROOT_PASSWORD=<pass> -p 3306:3306 -d mysql

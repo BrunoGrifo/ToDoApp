@@ -5,7 +5,7 @@ import (
 	"todo/types"
 )
 
-func fromTaskToDto(task *types.Task) *dto.TaskDto {
+func FromTaskToDto(task *types.Task) *dto.TaskDto {
 	return &dto.TaskDto{
 		ID:          task.ID,
 		Title:       task.Title,
@@ -18,7 +18,7 @@ func fromTaskToDto(task *types.Task) *dto.TaskDto {
 func FromTasksToDto(tasks []*types.Task) []*dto.TaskDto {
 	var taskDtos []*dto.TaskDto
 	for _, task := range tasks {
-		var taskDto *dto.TaskDto = fromTaskToDto(task)
+		var taskDto *dto.TaskDto = FromTaskToDto(task)
 		taskDtos = append(taskDtos, taskDto)
 	}
 	return taskDtos
