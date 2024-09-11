@@ -4,6 +4,7 @@ import (
 	"html/template"
 	"log"
 	"net/http"
+	"strconv"
 	"todo/dto"
 	"todo/mappers"
 	"todo/types"
@@ -21,65 +22,71 @@ func NewHandler(repository types.TaskRepository) *Handler {
 }
 
 func (h *Handler) RegisterRoutes(router *http.ServeMux) {
-	router.HandleFunc("GET /task", h.handleGetTasks)
+	router.HandleFunc("GET /task", h.handleGetAllTasks)
+	router.HandleFunc("GET /task/{id}", h.handleGetTasks)
 	router.HandleFunc("POST /task", h.handleCreateTasks)
-	router.HandleFunc("PUT /task", h.handleUpdateTasks)
-	router.HandleFunc("DELETE /task", h.handleDeleteTasks)
+	router.HandleFunc("PUT /task/{id}", h.handleUpdateTasks)
+	router.HandleFunc("DELETE /task/{id}", h.handleDeleteTasks)
 	router.HandleFunc("GET /show_csrf_form", h.handleCsrfForm)
 
 }
 
-func (h *Handler) handleGetTasks(w http.ResponseWriter, r *http.Request) {
-	id := r.URL.Query().Get("id")
-
-	if id == "" {
-		// get all
-		log.Println("Getting all tasks...")
-		tasks, err := h.repository.GetAllTasks()
-		if err != nil {
-			http.Error(w, "Internel server error", http.StatusInternalServerError)
-			return
-		}
-
-		log.Println(csrf.Token(r))
-		var allTasks dto.TodoList = dto.TodoList{
-			Tasks:     mappers.FromTasksToDto(tasks),
-			CsrfToken: csrf.Token(r),
-		}
-		// Create a template using the html
-		tmpl, err := template.ParseFiles("templates/view.html")
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		tmpl.Execute(w, allTasks)
-
-		// // Convert the tasks list to JSON
-		// w.Header().Set("Content-Type", "application/json")
-		// err = json.NewEncoder(w).Encode(tasks)
-		// if err != nil {
-		// 	http.Error(w, "Failed to encode tasks to JSON", http.StatusInternalServerError)
-		// 	return
-		// }
-
-		// // Successfully return the tasks
-		// w.WriteHeader(http.StatusOK)
-		// return
-
-	} else {
-		// get by id
-		// Validate UUID
-		uuid, err := uuid.Parse(id)
-		if err != nil {
-			http.Error(w, "Invalid UUID", http.StatusBadRequest)
-			return
-		}
-		h.repository.GetTaskById(uuid)
-		log.Println(uuid)
+func (h *Handler) handleGetAllTasks(w http.ResponseWriter, r *http.Request) {
+	// get all
+	log.Println("Getting all tasks...")
+	tasks, err := h.repository.GetAllTasks()
+	if err != nil {
+		http.Error(w, "Internel server error", http.StatusInternalServerError)
+		return
 	}
+
+	var allTasks dto.TodoList = dto.TodoList{
+		Tasks:     mappers.FromTasksToDto(tasks),
+		CsrfToken: csrf.Token(r),
+	}
+	// Create a template using the html
+	tmpl, err := template.ParseFiles("templates/view.html")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	tmpl.Execute(w, allTasks)
+
+	// // Successfully return the tasks
+	// w.WriteHeader(http.StatusOK)
+	// return
+}
+
+func (h *Handler) handleGetTasks(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+
+	uuid, err := uuid.Parse(id)
+	if err != nil {
+		http.Error(w, "Invalid UUID", http.StatusBadRequest)
+		return
+	}
+	task, err := h.repository.GetTaskById(uuid)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	taskDto := mappers.FromTaskToDto(task)
+
+	// Create a template using the html
+	tmpl, err := template.ParseFiles("templates/update_task_form.html")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	tmpl.Execute(w, map[string]interface{}{
+		"Task":      taskDto,
+		"CsrfToken": csrf.Token(r),
+	})
+
 }
 
 func (h *Handler) handleCreateTasks(w http.ResponseWriter, r *http.Request) {
+	log.Println("Creating task...")
 	// CSRF validation has already been handled by the middleware at this point
 	err := r.ParseForm()
 	if err != nil {
@@ -108,13 +115,43 @@ func (h *Handler) handleCreateTasks(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) handleUpdateTasks(w http.ResponseWriter, r *http.Request) {
+	var id string = r.PathValue("id")
+	var err error = r.ParseForm()
+	if err != nil {
+		http.Error(w, "Invalid form data", http.StatusBadRequest)
+		return
+	}
 
+	taskID, err := uuid.Parse(id)
+	if err != nil {
+		http.Error(w, "Invalid task ID", http.StatusBadRequest)
+		return
+	}
+
+	var name string = r.FormValue("title")
+	var description string = r.FormValue("description")
+	status, _ := strconv.Atoi(r.FormValue("status"))
+
+	// // validator
+
+	var task types.Task = types.Task{
+		ID:          taskID,
+		Title:       name,
+		Description: description,
+		Status:      types.Status(status),
+		Deleted:     false,
+	}
+
+	err = h.repository.UpdateTask(&task)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 }
 
 func (h *Handler) handleDeleteTasks(w http.ResponseWriter, r *http.Request) {
-	id := r.URL.Query().Get("id")
-	log.Println(id)
-	// id := r.URL.Query().Get("id")
+	log.Println("Deleting task...")
+	var id string = r.PathValue("id")
 
 	if id == "" {
 		http.Error(w, "Missing task ID", http.StatusBadRequest)
@@ -141,9 +178,9 @@ func (h *Handler) handleCsrfForm(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	csrfField := csrf.TemplateField(r)
+
 	tmpl.Execute(w, map[string]interface{}{
-		csrf.TemplateTag: csrfField,
+		csrf.TemplateTag: csrf.Token(r),
 	})
 
 }

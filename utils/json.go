@@ -24,6 +24,17 @@ func ParseJson(request *http.Request, obj any) error {
 	return err
 }
 
+func WriteToJson(w http.ResponseWriter, obj any) error {
+	// Convert the tasks list to JSON
+	w.Header().Set("Content-Type", "application/json")
+	err := json.NewEncoder(w).Encode(obj)
+	if err != nil {
+		http.Error(w, "Failed to encode tasks to JSON", http.StatusInternalServerError)
+		return err
+	}
+	return nil
+}
+
 func WriteTasksToJSONFile(filename string, tasks []types.Task) error {
 	file, err := os.Create(filename)
 	if err != nil {

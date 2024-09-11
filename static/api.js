@@ -1,11 +1,11 @@
 document.querySelectorAll('.delete-button').forEach(button => {
-    button.addEventListener('click', function() {
+    button.addEventListener('click', function(event) {
+        event.stopPropagation();
         const taskId = this.getAttribute('data-task-id');
         const csrfToken = this.getAttribute('data-csrf-token');
         console.log(csrfToken)
-        console.log("yo")
         if (confirm('Are you sure you want to delete this task?')) {
-            fetch(`/task?id=${taskId}`, {
+            fetch(`/task/${taskId}`, {
                 method: 'DELETE',
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded',
@@ -25,5 +25,58 @@ document.querySelectorAll('.delete-button').forEach(button => {
                 alert('An error occurred');
             });
         }
+    });
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+    // Select all gallery-item elements
+    const galleryItems = document.querySelectorAll('.gallery-item');
+
+    galleryItems.forEach(item => {
+        // Add click event listener to each gallery-item
+        item.addEventListener('click', () => {
+            // Retrieve the task ID from the data attribute
+            const taskId = item.getAttribute('data-task-id');
+
+            // Construct the URL for the GET request
+            const url = `/task/${taskId}`;
+
+            // Redirect to the URL
+            window.location.href = url;
+        });
+    });
+});
+
+document.getElementById('update-button').addEventListener('click', function() {
+    const form = document.getElementById('update-task-form');
+    const taskId = window.location.pathname.split("/")[2];
+    const formData = new FormData(form);
+    console.log("check");
+    const csrfToken = document.getElementById('csrf-token').value;
+
+    fetch(`/task/${taskId}`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRF-Token': csrfToken
+        },
+        body: new URLSearchParams(formData).toString()
+    })
+    .then(response => {
+
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        const url = '/task';
+        // Redirect to the URL
+        window.location.href = url;
+    })
+    .then(data => {
+        // Handle successful response
+        console.log('Success:', data);
+    })
+    .catch(error => {
+        // Handle error
+        console.error('Error:', error);
     });
 });

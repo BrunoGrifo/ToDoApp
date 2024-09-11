@@ -7,27 +7,8 @@
     <link rel="stylesheet" href="/static/styles_form.css">
 </head>
 <body>
-    <!-- <div id="app">
-        <form @submit.prevent="submitForm">
-          <div>
-            <label for="name">Title:</label><br>
-            <input id="name" type="text" required/>
-          </div>
-          <div>
-            <label for="email">Description:</label><br>
-            <input id="email" type="email"  required/>
-          </div>
-          <div>
-            <label for="firstSon">Who was the first son on mahtmagandi:</label><br>
-            <textarea id="firstSon" v-model="firstSon" required></textarea>
-          </div>
-          <button :class="[name ? activeClass : '']" type="submit">Submit</button>
-
-        </form>
-      </div> -->
-
       <div class="form-container">
-        <h2>Contact Us</h2>
+        <h2>Create Task</h2>
         <form action="/task" method="POST">
             <div class="form-group">
                 <label for="name">Title</label>
