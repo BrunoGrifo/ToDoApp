@@ -1,0 +1,3 @@
+# Note
+
+Ignore `old` folder
