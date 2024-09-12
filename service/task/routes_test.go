@@ -13,8 +13,8 @@ import (
 )
 
 func TestTaskServiceHandlers(t *testing.T) {
-	tastRepository := &mockTaskRepository{}
-	handler := NewHandler(tastRepository)
+	mockTaskRepository := &mockTaskRepository{}
+	handler := NewHandler(mockTaskRepository)
 
 	t.Run("Should create a task", func(t *testing.T) {
 		var taskdto dto.TaskDto = dto.TaskDto{
@@ -23,7 +23,7 @@ func TestTaskServiceHandlers(t *testing.T) {
 		}
 
 		payload, _ := json.Marshal(taskdto)
-		req, err := http.NewRequest(http.MethodPost, "/task/{id}", bytes.NewBuffer(payload))
+		req, err := http.NewRequest(http.MethodPost, "/task", bytes.NewBuffer(payload))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -34,7 +34,7 @@ func TestTaskServiceHandlers(t *testing.T) {
 		router.ServeHTTP(responseRecorder, req)
 
 		if responseRecorder.Code != http.StatusSeeOther {
-			t.Errorf("expected status code %d, got %d", http.StatusOK, responseRecorder.Code)
+			t.Errorf("expected status code %d, got %d", http.StatusSeeOther, responseRecorder.Code)
 		}
 
 	})
