@@ -88,8 +88,8 @@ func (h *Handler) handleGetTasks(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) handleCreateTasks(w http.ResponseWriter, r *http.Request) {
 	log.Println("Creating task...")
 	// CSRF validation has already been handled by the middleware at this point
-	err := r.ParseForm()
 
+	err := r.ParseForm()
 	if err != nil {
 		http.Error(w, "Invalid form data", http.StatusBadRequest)
 		return
