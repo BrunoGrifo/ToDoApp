@@ -57,3 +57,12 @@ func (wp *WorkerPool) Run() {
 	// Wait for all tasks to finish
 	wp.wg.Wait()
 }
+
+// // Create a worker pool
+// wp := concurrency.WorkerPool{
+// 	Tasks:             tasks,
+// 	ConcurrentWorkers: 2, // Number of workers that can run at a time
+// }
+
+// Run the pool
+// wp.Run()
