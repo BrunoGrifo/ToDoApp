@@ -4,13 +4,16 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"sync"
+	"time"
 	"todo/types"
 
 	"github.com/google/uuid"
 )
 
 type Repository struct {
-	db *sql.DB
+	db    *sql.DB
+	mutex sync.Mutex
 }
 
 func NewRepository(db *sql.DB) *Repository {
@@ -18,54 +21,106 @@ func NewRepository(db *sql.DB) *Repository {
 }
 
 func (r *Repository) GetTaskById(id uuid.UUID) (*types.Task, error) {
-	rows, err := r.db.Query("SELECT * from tasks WHERE id = ?", id)
-	if err != nil {
+	startTime := time.Now()
+
+	wg := &sync.WaitGroup{}
+	wg.Add(1)
+	errorCh := make(chan error)
+	resultCh := make(chan *types.Task)
+
+	go func() {
+		defer wg.Done()
+		rows, err := r.db.Query("SELECT * from tasks WHERE id = ?", id)
+		if err != nil {
+			errorCh <- err
+		}
+		defer rows.Close()
+
+		var task *types.Task = new(types.Task)
+		for rows.Next() {
+			task, err = scanRowsIntoTask(rows)
+			if err != nil {
+				errorCh <- err
+			}
+		}
+
+		if task.ID == uuid.Nil {
+			errorCh <- fmt.Errorf("user not found")
+		}
+		resultCh <- task
+	}()
+
+	go func() {
+		wg.Wait()
+		close(errorCh)
+		close(resultCh)
+	}()
+
+	elapsed := time.Since(startTime)
+	log.Printf("GetAllTasks took %s\n", elapsed)
+
+	select {
+	case tasks := <-resultCh:
+		return tasks, nil
+	case err := <-errorCh:
 		return nil, err
 	}
-	defer rows.Close()
-
-	var task *types.Task = new(types.Task)
-	for rows.Next() {
-		task, err = scanRowsIntoTask(rows)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	if task.ID == uuid.Nil {
-		return nil, fmt.Errorf("user not found")
-	}
-
-	return task, nil
 }
 
 func (r *Repository) GetAllTasks() ([]*types.Task, error) {
-	rows, err := r.db.Query("SELECT * FROM tasks WHERE deleted = ? ORDER BY status", false)
-	if err != nil {
-		log.Println(err)
-		return nil, err
-	}
-	defer rows.Close()
+	startTime := time.Now()
 
-	var tasks []*types.Task
-	for rows.Next() {
-		task, err := scanRowsIntoTask(rows)
+	wg := &sync.WaitGroup{}
+	wg.Add(1)
+	errorCh := make(chan error)
+	resultCh := make(chan []*types.Task)
+
+	go func() {
+		defer wg.Done()
+		rows, err := r.db.Query("SELECT * FROM tasks WHERE deleted = ? ORDER BY status", false)
 		if err != nil {
-			return nil, err
+			log.Println(err)
+			errorCh <- err
 		}
 
-		tasks = append(tasks, task)
-	}
+		defer rows.Close()
+		var tasks []*types.Task
+		for rows.Next() {
+			task, err := scanRowsIntoTask(rows)
+			if err != nil {
+				errorCh <- err
+			}
 
-	if err = rows.Err(); err != nil {
+			tasks = append(tasks, task)
+		}
+
+		if err = rows.Err(); err != nil {
+			errorCh <- err
+		}
+
+		if len(tasks) == 0 {
+			log.Println("No tasks found")
+		}
+
+		resultCh <- tasks
+	}()
+
+	go func() {
+		wg.Wait()
+		close(errorCh)
+		close(resultCh)
+	}()
+
+	elapsed := time.Since(startTime)
+	log.Printf("GetAllTasks took %s\n", elapsed)
+
+	select {
+	case tasks := <-resultCh:
+		return tasks, nil
+	case err := <-errorCh:
 		return nil, err
 	}
 
-	if len(tasks) == 0 {
-		log.Println("No tasks found")
-	}
-
-	return tasks, nil
 }
 
 func scanRowsIntoTask(rows *sql.Rows) (*types.Task, error) {
@@ -86,24 +141,79 @@ func scanRowsIntoTask(rows *sql.Rows) (*types.Task, error) {
 }
 
 func (r *Repository) CreateTask(task types.Task) error {
-	_, err := r.db.Exec("INSERT INTO tasks (id, title, description, status, deleted) VALUES (?,?,?,?,?)",
-		task.ID, task.Title, task.Description, types.Active, false)
-	if err != nil {
+	wg := &sync.WaitGroup{}
+	wg.Add(1)
+	errorCh := make(chan error)
+
+	go func() {
+		defer wg.Done()
+		_, err := r.db.Exec("INSERT INTO tasks (id, title, description, status, deleted) VALUES (?,?,?,?,?)",
+			task.ID, task.Title, task.Description, types.Active, false)
+		if err != nil {
+			errorCh <- err
+		}
+		errorCh <- nil
+	}()
+	go func() {
+		wg.Wait()
+		close(errorCh)
+	}()
+
+	if err := <-errorCh; err != nil {
 		return err
 	}
+
 	return nil
 }
 
 func (r *Repository) DeleteTask(id uuid.UUID) error {
-	_, err := r.db.Exec("DELETE FROM tasks WHERE id = ?", id)
-	return err
+	wg := &sync.WaitGroup{}
+	wg.Add(1)
+	errorCh := make(chan error)
+
+	go func() {
+		defer wg.Done()
+		_, err := r.db.Exec("DELETE FROM tasks WHERE id = ?", id)
+		if err != nil {
+			errorCh <- err
+			return
+		}
+		errorCh <- nil
+	}()
+	go func() {
+		wg.Wait()
+		close(errorCh)
+	}()
+
+	if err := <-errorCh; err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (r *Repository) UpdateTask(task *types.Task) error {
-	_, err := r.db.Exec("UPDATE tasks SET title = ?, description = ?, status = ? WHERE id = ?",
-		task.Title, task.Description, task.Status, task.ID)
-	if err != nil {
-		return fmt.Errorf("failed to update task with ID %d: %w", task.ID, err)
+	wg := &sync.WaitGroup{}
+	wg.Add(1)
+	errorCh := make(chan error)
+
+	go func() {
+		defer wg.Done()
+		_, err := r.db.Exec("UPDATE tasks SET title = ?, description = ?, status = ? WHERE id = ?",
+			task.Title, task.Description, task.Status, task.ID)
+		if err != nil {
+			errorCh <- fmt.Errorf("failed to update task with ID %d: %w", task.ID, err)
+		}
+		errorCh <- nil
+	}()
+	go func() {
+		wg.Wait()
+		close(errorCh)
+	}()
+
+	if err := <-errorCh; err != nil {
+		return err
 	}
+
 	return nil
 }
