@@ -88,6 +88,7 @@ func (h *Handler) handleGetTasks(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) handleCreateTasks(w http.ResponseWriter, r *http.Request) {
 	log.Println("Creating task...")
 	// CSRF validation has already been handled by the middleware at this point
+
 	err := r.ParseForm()
 	if err != nil {
 		http.Error(w, "Invalid form data", http.StatusBadRequest)
@@ -105,7 +106,7 @@ func (h *Handler) handleCreateTasks(w http.ResponseWriter, r *http.Request) {
 		Status:      types.Active,
 		Deleted:     false,
 	}
-	err = h.repository.CreateTask(task)
+	err = h.repository.CreateTask(&task)
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -184,26 +185,3 @@ func (h *Handler) handleCsrfForm(w http.ResponseWriter, r *http.Request) {
 	})
 
 }
-
-// func (h *Handler) handleCreateTasks(w http.ResponseWriter, r *http.Request) {
-// 	var taskDto types.TaskDto
-// 	var err error = utils.ParseJson(r, &taskDto)
-// 	if err != nil {
-// 		http.Error(w, err.Error(), http.StatusBadRequest)
-// 	}
-// 	// validator
-
-// 	var task types.Task = types.Task{
-// 		ID:          uuid.New(),
-// 		Title:       taskDto.Title,
-// 		Description: taskDto.Description,
-// 		Status:      taskDto.Status,
-// 		Deleted:     false,
-// 	}
-// 	err = h.repository.CreateTask(task)
-
-// 	if err != nil {
-// 		http.Error(w, err.Error(), http.StatusBadRequest)
-// 		return
-// 	}
-// }

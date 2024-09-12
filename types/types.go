@@ -19,7 +19,7 @@ const (
 type TaskRepository interface {
 	GetTaskById(id uuid.UUID) (*Task, error)
 	GetAllTasks() ([]*Task, error)
-	CreateTask(task Task) error
+	CreateTask(task *Task) error
 	DeleteTask(id uuid.UUID) error
 	UpdateTask(task *Task) error
 }
