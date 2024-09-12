@@ -140,7 +140,7 @@ func scanRowsIntoTask(rows *sql.Rows) (*types.Task, error) {
 	return task, nil
 }
 
-func (r *Repository) CreateTask(task types.Task) error {
+func (r *Repository) CreateTask(task *types.Task) error {
 	wg := &sync.WaitGroup{}
 	wg.Add(1)
 	errorCh := make(chan error)

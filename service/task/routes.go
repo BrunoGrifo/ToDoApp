@@ -105,7 +105,7 @@ func (h *Handler) handleCreateTasks(w http.ResponseWriter, r *http.Request) {
 		Status:      types.Active,
 		Deleted:     false,
 	}
-	err = h.repository.CreateTask(task)
+	err = h.repository.CreateTask(&task)
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
